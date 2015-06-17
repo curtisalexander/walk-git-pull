@@ -4,6 +4,7 @@
 
 var fs = require('fs');
 var path = require('path');
+var spawn = require('child_process').spawn;
 
 /**
  * Options
@@ -17,19 +18,26 @@ startDir = process.argv[2];
 
 // recursive search a la *nix find
 
-function find(dirFile) {
+function findGitDirs(dirFile) {
   fs.stat(dirFile, function(err, stats) {
     if (err) throw err;
     // if directory, call find again on all files within the directory
     if (stats.isDirectory()) {
       var absPath = path.resolve(dirFile);
       if (path.basename(absPath) === '.git') {
-        console.log(absPath); 
+        var parentDir = path.dirname(absPath);
+        console.log(absPath);
+        console.log(parentDir);
+        console.log();
+        var gitRemote = spawn('git', ['--git-dir=' + absPath, 'config', '--get', 'remote.origin.url']);
+        gitRemote.stdout.on('data', function (data) {
+          console.log('stdout: ' + data);
+        });
       }
       fs.readdir(dirFile, function(err, files) {
         if (err) throw err;
         for(var i = 0; i < files.length; i++) {
-          find(path.join(dirFile, files[i])); // recurse
+          findGitDirs(path.join(dirFile, files[i])); // recurse
         }
       });
     }
@@ -53,4 +61,4 @@ function find(dirFile) {
   });
 }
 
-find(startDir) ;
+findGitDirs(startDir) ;
