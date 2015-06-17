@@ -4,7 +4,8 @@
 
 var fs = require('fs');
 var path = require('path');
-var spawn = require('child_process').spawn;
+var exec = require('child_process').exec;
+var spawnSync = require('child_process').spawnSync;
 
 /**
  * Options
@@ -21,18 +22,37 @@ startDir = process.argv[2];
 function findGitDirs(dirFile) {
   fs.stat(dirFile, function(err, stats) {
     if (err) throw err;
-    // if directory, call find again on all files within the directory
+    // if directory, call findGitDirs again on all files within the directory
     if (stats.isDirectory()) {
       var absPath = path.resolve(dirFile);
       if (path.basename(absPath) === '.git') {
         var parentDir = path.dirname(absPath);
+        var gitRemote = spawnSync('git', ['--git-dir=' + absPath, 'config', '--get', 'remote.origin.url']);
         console.log(absPath);
         console.log(parentDir);
+        console.log('file: ' + gitRemote.file);
+        console.log('args: ' + gitRemote.args);
+        console.log('stdout: ' + gitRemote.stdout);
+        console.log('stderr: ' + gitRemote.stderr);
+        console.log('status: ' + gitRemote.status);
         console.log();
-        var gitRemote = spawn('git', ['--git-dir=' + absPath, 'config', '--get', 'remote.origin.url']);
-        gitRemote.stdout.on('data', function (data) {
-          console.log('stdout: ' + data);
+        // var gitRemote = exec('git --git-dir=' + absPath + ' config --get remote.origin.url', function(err, stdout, stderr));
+        // listeners
+        /*
+        gitRemote.stdout.on('data', function(data) {
+          console.log(absPath);
+          console.log(parentDir);
+          console.log('git remote url: ' + data);
         });
+        gitRemote.stderr.on('data', function(data) {
+          console.log('error: ' + data);
+        }); 
+        gitRemote.on('close', function (code) {
+          console.log(absPath);
+          console.log(parentDir);
+          console.log('exited with code: ' + code);
+          console.log();
+        });*/
       }
       fs.readdir(dirFile, function(err, files) {
         if (err) throw err;
@@ -41,23 +61,6 @@ function findGitDirs(dirFile) {
         }
       });
     }
-    // else { ignore files }
-    /*else if (stats.isFile()) {
-      year = stats['mtime'].getFullYear();
-      month = stats['mtime'].getMonth();
-
-      console.log('file: ' + dirFile);
-      console.log('year: ' + year); 
-      console.log('month: ' + month);
-      console.log();
-
-      if (uniqueYears.indexOf(year) === -1) {
-        uniqueYears.push(year);
-      }
-      if (uniqueMonths.indexOf(month) === -1) {
-        uniqueMonths.push(month);
-      }
-    }*/
   });
 }
 
