@@ -17,26 +17,30 @@ startDir = process.argv[2];
 
 // recursive search a la *nix find
 
-function find(dirFile, cnt) {
+function find(dirFile) {
   fs.stat(dirFile, function(err, stats) {
     if (err) throw err;
     // if directory, call find again on all files within the directory
     if (stats.isDirectory()) {
+      var absPath = path.resolve(dirFile);
+      if (path.basename(absPath) === '.git') {
+        console.log(absPath); 
+      }
       fs.readdir(dirFile, function(err, files) {
         if (err) throw err;
         for(var i = 0; i < files.length; i++) {
-          cnt++;
-          find(path.join(dirFile, files[i]), cnt); // recurse
+          find(path.join(dirFile, files[i])); // recurse
         }
       });
-    } else if (stats.isFile()) {
+    }
+    // else { ignore files }
+    /*else if (stats.isFile()) {
       year = stats['mtime'].getFullYear();
       month = stats['mtime'].getMonth();
 
       console.log('file: ' + dirFile);
       console.log('year: ' + year); 
       console.log('month: ' + month);
-      console.log('count: ' + cnt);
       console.log();
 
       if (uniqueYears.indexOf(year) === -1) {
@@ -45,11 +49,8 @@ function find(dirFile, cnt) {
       if (uniqueMonths.indexOf(month) === -1) {
         uniqueMonths.push(month);
       }
-    }
+    }*/
   });
 }
 
-var uniqueYears = [];
-var uniqueMonths = [];
-
-find(startDir, 0);
+find(startDir) ;
