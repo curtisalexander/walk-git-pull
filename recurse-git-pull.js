@@ -4,7 +4,6 @@
 
 var fs = require('fs');
 var path = require('path');
-var exec = require('child_process').exec;
 var spawnSync = require('child_process').spawnSync;
 
 /**
@@ -26,33 +25,7 @@ function findGitDirs(dirFile) {
     if (stats.isDirectory()) {
       var absPath = path.resolve(dirFile);
       if (path.basename(absPath) === '.git') {
-        var parentDir = path.dirname(absPath);
-        var gitRemote = spawnSync('git', ['--git-dir=' + absPath, 'config', '--get', 'remote.origin.url']);
-        console.log(absPath);
-        console.log(parentDir);
-        console.log('file: ' + gitRemote.file);
-        console.log('args: ' + gitRemote.args);
-        console.log('stdout: ' + gitRemote.stdout);
-        console.log('stderr: ' + gitRemote.stderr);
-        console.log('status: ' + gitRemote.status);
-        console.log();
-        // var gitRemote = exec('git --git-dir=' + absPath + ' config --get remote.origin.url', function(err, stdout, stderr));
-        // listeners
-        /*
-        gitRemote.stdout.on('data', function(data) {
-          console.log(absPath);
-          console.log(parentDir);
-          console.log('git remote url: ' + data);
-        });
-        gitRemote.stderr.on('data', function(data) {
-          console.log('error: ' + data);
-        }); 
-        gitRemote.on('close', function (code) {
-          console.log(absPath);
-          console.log(parentDir);
-          console.log('exited with code: ' + code);
-          console.log();
-        });*/
+        gitPull(absPath);
       }
       fs.readdir(dirFile, function(err, files) {
         if (err) throw err;
@@ -63,5 +36,30 @@ function findGitDirs(dirFile) {
     }
   });
 }
+
+function gitPull(gitPath) {
+  var parentDir = path.dirname(gitPath);
+  var gitRemote = spawnSync('git', ['--git-dir=' + gitPath, 'config', '--get', 'remote.origin.url']);
+  if (gitRemote.status === 0) {
+    var gitPull = spawnSync('git', ['--git-dir=' + gitPath, 'pull']);
+    if (gitPull.error) throw gitPull.error;
+    // handle errors
+    if (gitPull.status !== 0) {
+      console.log('Cannot update ' + parentDir);
+      console.log('non-zero status: ' + gitPull.status);
+    } else { 
+      console.log('Updating ' + parentDir);
+      console.log(gitPull.stdout.toString());
+    }
+  } else {
+    console.log('Cannot update ' + parentDir);
+    console.log('Nothing to update as there is not a remote origin');
+    console.log();
+  }
+};
+
+/**
+ * Call function
+ */
 
 findGitDirs(startDir) ;
