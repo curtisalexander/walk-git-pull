@@ -39,6 +39,8 @@ function findGitDirs(dirFile) {
   });
 }
 
+// execute git pull on remote origins
+
 function gitPull(gitPath) {
   var parentDir = path.dirname(gitPath);
   var gitRemote = spawnSync('git', ['--git-dir=' + gitPath, 'config', '--get', 'remote.origin.url']);
