@@ -20,19 +20,19 @@ startDir = process.argv[2];
 
 // recursive search a la *nix find
 
-function findGitDirs(dirFile) {
-  fs.stat(dirFile, function(err, stats) {
+function findGitDirs(dirOrFile) {
+  fs.stat(dirOrFile, function(err, stats) {
     if (err) throw err;
     // if directory, call findGitDirs again on all files within the directory
     if (stats.isDirectory()) {
-      var absPath = path.resolve(dirFile);
+      var absPath = path.resolve(dirOrFile);
       if (path.basename(absPath) === '.git') {
         gitPull(absPath);
       }
-      fs.readdir(dirFile, function(err, files) {
+      fs.readdir(dirOrFile, function(err, files) {
         if (err) throw err;
         for(var i = 0; i < files.length; i++) {
-          findGitDirs(path.join(dirFile, files[i])); // recurse
+          findGitDirs(path.join(dirOrFile, files[i])); // recurse
         }
       });
     }
@@ -41,22 +41,23 @@ function findGitDirs(dirFile) {
 
 // execute git pull on remote origins
 
-function gitPull(gitPath) {
-  var parentDir = path.dirname(gitPath);
-  var gitRemote = spawnSync('git', ['--git-dir=' + gitPath, 'config', '--get', 'remote.origin.url']);
+function gitPull(gitDir) {
+  var repoDir = path.dirname(gitDir);
+  var gitRemote = spawnSync('git', ['--git-dir=' + gitDir, 'config', '--get', 'remote.origin.url']);
+  
   if (gitRemote.status === 0) {
-    var gitPull = spawnSync('git', ['--git-dir=' + gitPath, 'pull']);
-    if (gitPull.error) throw gitPull.error;
+    var gitPullCommand = spawnSync('git', ['--git-dir=' + gitDir, '--work-tree=' + repoDir, 'pull']);
+    if (gitPullCommand.error) throw gitPullCommand.error;
     // handle errors
-    if (gitPull.status !== 0) {
-      console.log('Cannot update ' + parentDir);
-      console.log('non-zero status: ' + gitPull.status);
+    if (gitPullCommand.status !== 0) {
+      console.log('Cannot update ' + repoDir);
+      console.log('non-zero status: ' + gitPullCommand.status);
     } else { 
-      console.log('Updating ' + parentDir);
-      console.log(gitPull.stdout.toString());
+      console.log('Updating ' + repoDir);
+      console.log(gitPullCommand.stdout.toString());
     }
   } else {
-    console.log('Cannot update ' + parentDir);
+    console.log('Cannot update ' + repoDir);
     console.log('Nothing to update as there is not a remote origin');
     console.log();
   }
